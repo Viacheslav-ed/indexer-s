@@ -1,22 +1,34 @@
 import {
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+import { type ConfigType } from '@nestjs/config';
 import { createClient } from 'redis';
+import redisConfig from '../config/redis.config';
 
 @Injectable()
 export class RedisService {
   private readonly logger = new Logger(RedisService.name);
   private client: ReturnType<typeof createClient> | null = null;
 
+  constructor(
+    @Inject(redisConfig.KEY)
+    private readonly redisConfiguration: ConfigType<typeof redisConfig>,
+  ) {}
+
   private get redisUrl(): string {
-    const host = process.env.REDIS_HOST ?? '127.0.0.1';
-    const port = process.env.REDIS_PORT ?? '6379';
-    const db = process.env.REDIS_DB ?? '0';
-    const pass = process.env.REDIS_PASSWORD ?? '';
-    const tls = (process.env.REDIS_TLS ?? 'false').toLowerCase() === 'true';
-    return `${tls ? 'rediss' : 'redis'}://${pass ? `:${encodeURIComponent(pass)}@` : ''}${host}:${port}/${db}`;
+    return this.redisConfiguration.url;
+  }
+
+  private getRedisEndpoint(): string {
+    try {
+      const parsed = new URL(this.redisUrl);
+      return `${parsed.protocol}//${parsed.hostname}:${parsed.port}`;
+    } catch {
+      return 'invalid_redis_endpoint';
+    }
   }
 
   async connect() {
@@ -24,7 +36,7 @@ export class RedisService {
       return {
         status: 'already_connected',
         connected: true,
-        url: this.redisUrl,
+        url: this.getRedisEndpoint(),
       };
     }
 
@@ -42,7 +54,7 @@ export class RedisService {
       return {
         status: 'connected',
         connected: true,
-        url: this.redisUrl,
+        url: this.getRedisEndpoint(),
       };
     } catch (error) {
       await client.disconnect();
