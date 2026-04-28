@@ -1,0 +1,27 @@
+{
+  "mode": "multi",
+  "urls": [
+    "https://ethereum-rpc.publicnode.com",
+    "https://eth.meowrpc.com",
+    "https://eth.api.pocket.network",
+    "https://rpc.fullsend.to",
+    "https://ethereum-json-rpc.stakely.io",
+    "https://eth-rpc.gateway.pokt.network",
+    "https://eth-rpc.api.onfinality.io/public",
+    "https://eth-rpc.com",
+    "https://eth-rpc.unifra.io",
+    "https://eth-rpc.ankr.com/eth"
+  ],
+  "allowedMethods": [
+    "eth_blockNumber",
+    "eth_getBlockByNumber",
+    "eth_getTransactionByHash",
+    "eth_getLogs",
+    "eth_chainId"
+  ],
+  "timeoutMs": 5000,
+  "healthcheckIntervalMs": 15000,
+  "slowThresholdMs": 1200,
+  "failureThreshold": 3,
+  "recoveryCooldownMs": 30000
+}
