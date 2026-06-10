@@ -51,6 +51,12 @@ export class RpcService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.config.urls.forEach((url, index) => {
+      try {
+        new URL(url);
+      } catch {
+        this.logger.error(`Invalid RPC URL skipped: ${url}`);
+        return;
+      }
       this.nodes.push({
         index,
         url,
@@ -92,7 +98,7 @@ export class RpcService implements OnModuleInit, OnModuleDestroy {
       allowedMethods: [...this.allowedMethods],
       providers: this.nodes.map((node) => ({
         index: node.index,
-        endpoint: this.toEndpoint(node.url),
+        endpoint: node.url,
         healthy: node.healthy,
         active: node.active,
         requestCount: node.requestCount,
@@ -113,7 +119,7 @@ export class RpcService implements OnModuleInit, OnModuleDestroy {
     return {
       mode: this.mode,
       index: node.index,
-      endpoint: this.toEndpoint(node.url),
+      endpoint: node.url,
       healthy: node.healthy,
       avgLatencyMs: node.ewmaLatencyMs,
       lastLatencyMs: node.lastLatencyMs,
@@ -186,16 +192,16 @@ export class RpcService implements OnModuleInit, OnModuleDestroy {
           await this.withTimeout(
             this.sendRpcRequest<string>(node, 'eth_blockNumber', []),
             this.config.timeoutMs,
-            `healthcheck timeout for ${this.toEndpoint(node.url)}`,
+            `healthcheck timeout for ${node.url}`,
           );
           this.recordSuccess(node, Date.now() - startedAt, true);
           this.logger.debug(
-            `Healthcheck success for ${this.toEndpoint(node.url)} - latency: ${Date.now() - startedAt}ms`,
+            `Healthcheck success for ${node.url} - latency: ${Date.now() - startedAt}ms`,
           );
         } catch (error) {
           this.recordFailure(node, error, true);
           this.logger.debug(
-            `Healthcheck failure for ${this.toEndpoint(node.url)} - error: ${error instanceof Error ? error.message : 'unknown error'}`,
+            `Healthcheck failure for ${node.url} - error: ${error instanceof Error ? error.message : 'unknown error'}`,
           );
         }
       }),
@@ -219,7 +225,7 @@ export class RpcService implements OnModuleInit, OnModuleDestroy {
         const response = await this.withTimeout(
           request(node),
           this.config.timeoutMs,
-          `${operation} timed out for ${this.toEndpoint(node.url)}`,
+          `${operation} timed out for ${node.url}`,
         );
 
         this.recordSuccess(node, Date.now() - startedAt);
@@ -233,7 +239,7 @@ export class RpcService implements OnModuleInit, OnModuleDestroy {
       } catch (error) {
         this.recordFailure(node, error);
         errors.push(
-          `${this.toEndpoint(node.url)}: ${error instanceof Error ? error.message : 'unknown error'}`,
+          `${node.url}: ${error instanceof Error ? error.message : 'unknown error'}`,
         );
         this.maybeSwitchActive(`failure in ${operation}`);
 
@@ -347,7 +353,7 @@ export class RpcService implements OnModuleInit, OnModuleDestroy {
 
     if (previous !== index) {
       this.logger.warn(
-        `RPC switch: ${this.toEndpoint(this.nodes[previous].url)} -> ${this.toEndpoint(this.nodes[index].url)} (${reason})`,
+        `RPC switch: ${this.nodes[previous].url} -> ${this.nodes[index].url} (${reason})`,
       );
     }
   }
@@ -400,20 +406,6 @@ export class RpcService implements OnModuleInit, OnModuleDestroy {
       this.mode === 'multi'
     ) {
       node.active = false;
-    }
-  }
-
-  private toEndpoint(url: string): string {
-    try {
-      const parsed = new URL(url);
-      const defaultPort =
-        parsed.protocol === 'https:' || parsed.protocol === 'wss:'
-          ? '443'
-          : '80';
-      const port = parsed.port || defaultPort;
-      return `${parsed.protocol}//${parsed.hostname}:${port}`;
-    } catch {
-      return 'invalid_rpc_url';
     }
   }
 

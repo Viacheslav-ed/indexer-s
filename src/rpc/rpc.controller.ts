@@ -29,9 +29,4 @@ export class RpcController {
       result: await this.rpcService.call(body.method, body.params ?? []),
     };
   }
-
-  @Post('report-failure')
-  reportFailure(@Body() body?: { url?: string; reason?: string }) {
-    return this.rpcService.reportFailure(body?.url, body?.reason);
-  }
 }

@@ -10,7 +10,7 @@
     "https://eth-rpc.api.onfinality.io/public",
     "https://eth-rpc.com",
     "https://eth-rpc.unifra.io",
-    "https://eth-rpc.ankr.com/eth"
+    "-https://eth-rpc.ankr..com/eth---"
   ],
   "allowedMethods": [
     "eth_blockNumber",
